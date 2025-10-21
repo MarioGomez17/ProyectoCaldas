@@ -1,0 +1,226 @@
+dotnet add package Microsoft.EntityFrameworkCore
+dotnet add package Npgsql.EntityFrameworkCore.PostgreSQL
+dotnet add package Microsoft.EntityFrameworkCore.Design
+dotnet add package Microsoft.EntityFrameworkCore.Tools
+
+
+dotnet ef migrations add NomenclaturaTablaNM
+dotnet ef database update
+
+using System.Collections.Generic;
+
+public class User
+{
+    // Clave Primaria (EF Core la detecta por la convención "Id" o "UserId")
+    public int UserId { get; set; }
+    public string Name { get; set; }
+    public string Email { get; set; }
+
+    // Clave Foránea (FK) para la relación con Role (N:1)
+    public int RoleId { get; set; }
+
+    // Propiedades de Navegación (Relaciones)
+
+    // 1. Relación con Phone (1:N) - Un usuario tiene muchos teléfonos
+    public ICollection<Phone> Phones { get; set; } = new List<Phone>();
+
+    // 2. Relación con Role (N:1) - Un usuario pertenece a un Role
+    public Role Role { get; set; }
+}
+
+
+
+public class Phone
+{
+    // Clave Primaria
+    public int PhoneId { get; set; }
+    public string Number { get; set; }
+
+    // Clave Foránea (FK) para la relación con User (N:1)
+    // EF Core la detecta por la convención "NombreClasePadreId"
+    public int UserId { get; set; }
+
+    // Propiedad de Navegación (Relación)
+    // 1. Relación con User (N:1) - Un teléfono pertenece a un solo User
+    public User User { get; set; }
+}
+
+
+using System.Collections.Generic;
+
+public class Role
+{
+    // Clave Primaria
+    public int RoleId { get; set; }
+    public string Name { get; set; }
+
+    // Propiedades de Navegación (Relaciones)
+
+    // 1. Relación con User (1:N) - Un Role puede tener muchos Users
+    public ICollection<User> Users { get; set; } = new List<User>();
+
+    // 2. Relación con Permission (N:M) - Un Role tiene muchas Permissions
+    // EF Core creará una tabla intermedia automáticamente.
+    public ICollection<Permission> Permissions { get; set; } = new List<Permission>();
+}
+
+
+using System.Collections.Generic;
+
+public class Permission
+{
+    // Clave Primaria
+    public int PermissionId { get; set; }
+    public string Name { get; set; }
+    public string Code { get; set; }
+
+    // Propiedad de Navegación (Relación)
+    // 1. Relación con Role (N:M) - Un Permission puede pertenecer a muchos Roles
+    public ICollection<Role> Roles { get; set; } = new List<Role>();
+}
+
+
+
+using Microsoft.EntityFrameworkCore;
+
+public class AppDbContext : DbContext
+{
+    // Constructor para la configuración de la conexión (usando Npgsql y PostgreSQL)
+    public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
+    {
+    }
+
+    // DBSet para cada uno de los modelos que serán tablas en la base de datos
+    public DbSet<User> Users { get; set; }
+    public DbSet<Phone> Phones { get; set; }
+    public DbSet<Role> Roles { get; set; }
+    public DbSet<Permission> Permissions { get; set; }
+}
+
+
+using Microsoft.EntityFrameworkCore;
+
+public class AppDbContext : DbContext
+{
+    public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
+    {
+    }
+
+    // DbSet para tus modelos
+    public DbSet<User> Users { get; set; }
+    public DbSet<Phone> Phones { get; set; }
+    public DbSet<Role> Roles { get; set; }
+    public DbSet<Permission> Permissions { get; set; }
+
+    // ¡Aquí está la personalización!
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        // Configuración para la relación N:M entre Role y Permission
+        modelBuilder.Entity<Role>()
+            // Un Role tiene muchos Permissions
+            .HasMany(r => r.Permissions)
+            // Un Permission tiene muchos Roles
+            .WithMany(p => p.Roles)
+            // Usa el método JoinTable para nombrar la tabla intermedia
+            // En este caso, la nombraremos "RolePermissions"
+            .UsingEntity(j => j.ToTable("RolePermissions")); 
+
+        // Llama a la implementación base para que se apliquen las convenciones por defecto
+        base.OnModelCreating(modelBuilder);
+    }
+}
+
+
+using Microsoft.EntityFrameworkCore;
+using MiProyectoMVC.Data; // Importa el namespace de la carpeta Data
+using Npgsql.EntityFrameworkCore.PostgreSQL; // Importa Npgsql
+
+var builder = WebApplication.CreateBuilder(args);
+
+// ----------------------------------------------------------------------
+// Configuración del DbContext con PostgreSQL
+// ----------------------------------------------------------------------
+
+// 1. Obtener la cadena de conexión del appsettings.json
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+
+// 2. Registrar el AppDbContext con la inyección de dependencias
+builder.Services.AddDbContext<AppDbContext>(options =>
+    // Usar el proveedor Npgsql para PostgreSQL
+    options.UseNpgsql(connectionString)
+);
+
+// ----------------------------------------------------------------------
+// Resto de la configuración
+// ----------------------------------------------------------------------
+
+// Add services to the container.
+builder.Services.AddControllersWithViews();
+
+var app = builder.Build();
+
+// Configure the HTTP request pipeline.
+// ...
+
+
+{
+  "Logging": {
+    // ...
+  },
+  "AllowedHosts": "*",
+  "ConnectionStrings": {
+    "DefaultConnection": "Host=localhost;Port=5432;Database=NombreDeTuDB;Username=postgres;Password=TuContrasena"
+  }
+}
+
+
+using Microsoft.EntityFrameworkCore;
+using MiProyectoMVC.Data;
+using MiProyectoMVC.Models; // Asumiendo que tus modelos están aquí
+
+public class UserService : IUserService
+{
+    private readonly AppDbContext _context;
+
+    public UserService(AppDbContext context)
+    {
+        _context = context;
+    }
+
+    public List<User> GetAllUsers()
+    {
+        // La lógica de EF Core se mantiene aquí
+        return _context.Users
+                       .Include(u => u.Role)
+                       .ToList();
+    }
+    
+    // ... otros métodos (GetUserById, AddUser, UpdateUser)
+}
+
+
+
+public class UsersController : Controller
+{
+    private readonly IUserService _userService; // Dependencia del servicio
+
+    public UsersController(IUserService userService)
+    {
+        _userService = userService;
+    }
+
+    public IActionResult Index()
+    {
+        // El controlador llama al servicio, sin saber cómo se consultan los datos
+        var users = _userService.GetAllUsers();
+        return View(users);
+    }
+}
+
+
+// ... en Program.cs
+// Registra el servicio y su interfaz
+builder.Services.AddScoped<IUserService, UserService>(); 
+// 'AddScoped' significa que se crea una nueva instancia por cada solicitud HTTP
+
+// ...
