@@ -224,3 +224,36 @@ builder.Services.AddScoped<IUserService, UserService>();
 // 'AddScoped' significa que se crea una nueva instancia por cada solicitud HTTP
 
 // ...
+
+
+
+
+[HttpPost]
+public async Task<IActionResult> CrearUsuario(UsuarioModel usuario)
+{
+    if (ModelState.IsValid)
+    {
+        _context.Usuarios.Add(usuario);  // _context es el DbContext inyectado
+        await _context.SaveChangesAsync();
+        return RedirectToAction("Index"); // o alguna otra vista
+    }
+    return View(usuario);
+}
+
+
+
+
+
+
+
+
+
+
+
+protected override void OnModelCreating(ModelBuilder modelBuilder)
+{
+    modelBuilder.Entity<UsuarioModel>().HasKey(U => U.Usuario_Id);
+}
+dotnet tool update --global dotnet-ef
+dotnet ef migrations add NomenclaturaTablaNM
+dotnet ef database update
