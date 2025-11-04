@@ -17,7 +17,7 @@ namespace proyecto_caldas.Implementacion
         {
             this.dBContext = dBContext;
         }
-        public async void CrearUsuarioAsync(UsuarioModel usuario)
+        public async void CrearUsuario(UsuarioModel usuario)
         {
             if (usuario != null)
             {

@@ -8,6 +8,6 @@ namespace proyecto_caldas.Services
 {
     public interface IUsuarioService
     {
-        void CrearUsuarioAsync(UsuarioModel usuario);
+        void CrearUsuario(UsuarioModel usuario);
     }
 }

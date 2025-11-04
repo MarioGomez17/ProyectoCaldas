@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using Npgsql.EntityFrameworkCore.PostgreSQL;
 using proyecto_caldas.Data;
+using proyecto_caldas.Implementacion;
+using proyecto_caldas.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -10,6 +12,9 @@ var connectionString = builder.Configuration
 builder.Services.AddDbContext<DBContext>(options =>
     options.UseNpgsql(connectionString)
 );
+
+builder.Services.AddScoped<IUsuarioService, UsuarioService>(); 
+
 // Add services to the container.
 builder.Services.AddControllersWithViews();
 
