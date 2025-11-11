@@ -257,3 +257,87 @@ protected override void OnModelCreating(ModelBuilder modelBuilder)
 dotnet tool update --global dotnet-ef
 dotnet ef migrations add NomenclaturaTablaNM
 dotnet ef database update
+
+
+/*
+[ApiController]
+[Route("api/micontrolador")]
+public class MiControlador : ControllerBase
+{
+    [HttpGet("obtener-persona")]
+    public IActionResult ObtenerDatos()
+    {
+        var datos = new { Nombre = "Juan", Edad = 30 };
+        return Ok(datos);
+    }
+}
+*/
+
+
+
+
+
+
+
+using Microsoft.AspNetCore.Cryptography.KeyDerivation;
+using System.Security.Cryptography;
+
+// 1. Generar un "salt" (sal) aleatorio
+byte[] salt = new byte[128 / 8]; // Tamaño en bytes para 128 bits
+using (var rng = RandomNumberGenerator.Create())
+{
+    rng.GetBytes(salt); // Rellena el array con bytes aleatorios criptográficamente fuertes
+}
+
+// 2. Derivar el hash de la contraseña usando PBKDF2 (Password-Based Key Derivation Function 2)
+string hashed = Convert.ToBase64String(KeyDerivation.Pbkdf2(
+    password: password, // Contraseña original que quieres proteger
+    salt: salt,         // Sal generada aleatoriamente para evitar ataques de tabla rainbow
+    prf: KeyDerivationPrf.HMACSHA256, // Función pseudoaleatoria basada en HMAC SHA256
+    iterationCount: 100000, // Número de iteraciones para hacer el proceso más lento y resistente a ataques
+    numBytesRequested: 256 / 8)); // Longitud deseada del hash en bytes (256 bits = 32 bytes)
+
+// 3. El resultado es una cadena base64 que representa el hash seguro de la contraseña
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+@model TuProyecto.Models.User
+
+@using (Html.BeginForm("GuardarUsuario", "Usuario", FormMethod.Post))
+{
+    <label>Nombre</label>
+    @Html.TextBoxFor(m => m.Nombre)
+    <br />
+    <label>Email</label>
+    @Html.TextBoxFor(m => m.Email)
+    <br />
+    <label>Password</label>
+    @Html.PasswordFor(m => m.Password)
+    <br />
+    <input type="submit" value="Guardar" />
+}
+
+
+[HttpPost]
+public ActionResult GuardarUsuario(User user)
+{
+    if (ModelState.IsValid)
+    {
+        // Aquí guardas el usuario en la base de datos o haces otra lógica
+        return RedirectToAction("Index");
+    }
+    return View(user);
+}

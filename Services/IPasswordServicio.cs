@@ -2,12 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using proyecto_caldas.Models;
 
 namespace proyecto_caldas.Services
 {
-    public interface IUsuarioService
+    public interface IPasswordServicio
     {
-        Task CrearUsuario(UsuarioModel usuario);
+        string HashPassword(string password);
     }
 }

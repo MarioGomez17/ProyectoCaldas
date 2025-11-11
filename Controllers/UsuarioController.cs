@@ -5,28 +5,41 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using proyecto_caldas.Models;
+using proyecto_caldas.Services;
 
 namespace proyecto_caldas.Controllers
 {
-    [Route("[controller]")]
+
+    [Route("user")]
     public class UsuarioController : Controller
     {
-        private readonly ILogger<UsuarioController> _logger;
+        private readonly IUsuarioService usuarioService;
 
-        public UsuarioController(ILogger<UsuarioController> logger)
+        public UsuarioController(IUsuarioService usuarioService)
         {
-            _logger = logger;
+            this.usuarioService = usuarioService;
         }
 
-        public IActionResult Index()
+        [HttpPost]
+        [Route("register")]
+        public async Task<IActionResult> Register(UsuarioModel usuario)
+        {
+            if (ModelState.IsValid)
+            {
+                await usuarioService.CrearUsuario(usuario);
+            }
+            return RedirectToAction("Index", "Home");
+        }
+
+        [HttpGet]
+        [Route("register")]
+        public IActionResult Register()
         {
             return View();
         }
-
-        [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
-        public IActionResult Error()
-        {
-            return View("Error!");
-        }
     }
 }
+/*
+
+*/
